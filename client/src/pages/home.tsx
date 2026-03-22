@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Prospect } from "@shared/schema";
 import { STATUSES } from "@shared/schema";
 import { ProspectCard } from "@/components/prospect-card";
 import { AddProspectForm } from "@/components/add-prospect-form";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Briefcase, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,10 +31,20 @@ function KanbanColumn({
   status,
   prospects,
   isLoading,
+  onDragOver,
+  onDrop,
+  onDragLeave,
+  isDragOver,
+  onCardDragStart,
 }: {
   status: string;
   prospects: Prospect[];
   isLoading: boolean;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDragLeave: () => void;
+  isDragOver: boolean;
+  onCardDragStart: (id: number) => void;
 }) {
   const [filter, setFilter] = useState<string>("All");
 
@@ -43,7 +54,10 @@ function KanbanColumn({
 
   return (
     <div
-      className="flex flex-col min-w-[260px] max-w-[320px] w-full bg-muted/40 rounded-md"
+      className={`flex flex-col min-w-[260px] max-w-[320px] w-full bg-muted/40 rounded-md transition-all duration-150 ${isDragOver ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragLeave={onDragLeave}
       data-testid={`column-${status.replace(/\s+/g, "-").toLowerCase()}`}
     >
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50">
@@ -82,7 +96,7 @@ function KanbanColumn({
             </div>
           ) : (
             filteredProspects.map((prospect) => (
-              <ProspectCard key={prospect.id} prospect={prospect} />
+              <ProspectCard key={prospect.id} prospect={prospect} onDragStart={() => onCardDragStart(prospect.id)} />
             ))
           )}
         </div>
@@ -93,9 +107,20 @@ function KanbanColumn({
 
 export default function Home() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
 
   const { data: prospects, isLoading } = useQuery<Prospect[]>({
     queryKey: ["/api/prospects"],
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      await apiRequest("PATCH", `/api/prospects/${id}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prospects"] });
+    },
   });
 
   const groupedByStatus = STATUSES.reduce(
@@ -152,6 +177,21 @@ export default function Home() {
               status={status}
               prospects={groupedByStatus[status] || []}
               isLoading={isLoading}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverStatus(status);
+              }}
+              onDragLeave={() => setDragOverStatus(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverStatus(null);
+                if (draggedId !== null) {
+                  updateStatusMutation.mutate({ id: draggedId, status });
+                  setDraggedId(null);
+                }
+              }}
+              isDragOver={dragOverStatus === status}
+              onCardDragStart={(id) => setDraggedId(id)}
             />
           ))}
         </div>
