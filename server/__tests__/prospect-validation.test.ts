@@ -20,4 +20,23 @@ describe("prospect creation validation", () => {
     expect(result.valid).toBe(false);
     expect(result.errors).toContain("Role title is required");
   });
+
+  test("accepts a prospect with salary field", () => {
+    const result = validateProspect({
+      companyName: "Google",
+      roleTitle: "Product Manager",
+      salary: "$150,000",
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  test("accepts a prospect without salary field", () => {
+    const result = validateProspect({
+      companyName: "Meta",
+      roleTitle: "Engineer",
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
 });
