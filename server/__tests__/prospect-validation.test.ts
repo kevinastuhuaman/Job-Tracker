@@ -39,4 +39,23 @@ describe("prospect creation validation", () => {
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
+
+  test("accepts valid status update for drag-and-drop", () => {
+    const result = validateProspect({
+      companyName: "Apple",
+      roleTitle: "Designer",
+      status: "Interviewing",
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  test("rejects invalid status value", () => {
+    const result = validateProspect({
+      companyName: "Apple",
+      roleTitle: "Designer",
+      status: "InvalidStatus",
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain("Status must be one of");
+  });
 });

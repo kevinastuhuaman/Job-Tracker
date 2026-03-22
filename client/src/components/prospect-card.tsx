@@ -41,7 +41,7 @@ function InterestIndicator({ level }: { level: string }) {
   }
 }
 
-export function ProspectCard({ prospect }: { prospect: Prospect }) {
+export function ProspectCard({ prospect, onDragStart }: { prospect: Prospect; onDragStart?: () => void }) {
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -62,6 +62,11 @@ export function ProspectCard({ prospect }: { prospect: Prospect }) {
     <>
       <div
         className="group bg-card border border-card-border rounded-md p-3 space-y-2 hover-elevate cursor-pointer transition-all duration-150"
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          onDragStart?.();
+        }}
         onClick={() => setEditOpen(true)}
         data-testid={`card-prospect-${prospect.id}`}
       >
