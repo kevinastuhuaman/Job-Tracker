@@ -35,6 +35,12 @@ function KanbanColumn({
   prospects: Prospect[];
   isLoading: boolean;
 }) {
+  const [filter, setFilter] = useState<string>("All");
+
+  const filteredProspects = filter === "All"
+    ? prospects
+    : prospects.filter(p => p.interestLevel === filter);
+
   return (
     <div
       className="flex flex-col min-w-[260px] max-w-[320px] w-full bg-muted/40 rounded-md"
@@ -50,6 +56,18 @@ function KanbanColumn({
         >
           {prospects.length}
         </Badge>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="text-xs bg-transparent border border-border/50 rounded px-1 py-0.5 ml-1 outline-none cursor-pointer"
+          data-testid={`filter-${status.replace(/\s+/g, "-").toLowerCase()}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <option value="All">All</option>
+          <option value="High">🔥 High</option>
+          <option value="Medium">👍 Medium</option>
+          <option value="Low">🤷 Low</option>
+        </select>
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-2">
         <div className="space-y-2">
@@ -58,12 +76,12 @@ function KanbanColumn({
               <Skeleton className="h-28 rounded-md" />
               <Skeleton className="h-20 rounded-md" />
             </>
-          ) : prospects.length === 0 ? (
+          ) : filteredProspects.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center" data-testid={`empty-${status.replace(/\s+/g, "-").toLowerCase()}`}>
               <p className="text-xs text-muted-foreground">No prospects</p>
             </div>
           ) : (
-            prospects.map((prospect) => (
+            filteredProspects.map((prospect) => (
               <ProspectCard key={prospect.id} prospect={prospect} />
             ))
           )}
